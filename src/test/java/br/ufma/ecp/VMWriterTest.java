@@ -594,4 +594,272 @@ public class VMWriterTest extends TestSupport {
         assertEquals(expected, actual);
     }
 
+    @Test
+    public void testMethodSimples() {
+        var input = """
+            class Main {
+                function void main () {
+                    var Point p1, p2;
+                    var int d;
+                    let d = p1.distance(p2);
+                    return;
+                }
+            }      
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.main 3
+            push local 0
+            push local 1
+            call Point.distance 2
+            pop local 2
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
+
+    @Test
+    public void testMethod() {
+        var input = """
+            class Point {
+            field int x, y;
+            static int pointCount;
+
+            constructor Point new(int ax, int ay) {}
+
+            method int getx() {}
+            method int gety() {}
+            method int getPointCount() {}
+
+            method Point plus(Point other) {}
+            method int distance(Point other) {
+                var int dx, dy;
+                let dx = x - other.getx();
+                let dy = y - other.gety();
+                return Math.sqrt((dx*dx) + (dy*dy));
+            }
+            method void print() {}
+        }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Point.new 0
+            push constant 2
+            call Memory.alloc 1
+            pop pointer 0
+            function Point.getx 0
+            push argument 0
+            pop pointer 0
+            function Point.gety 0
+            push argument 0
+            pop pointer 0
+            function Point.getPointCount 0
+            push argument 0
+            pop pointer 0
+            function Point.plus 0
+            push argument 0
+            pop pointer 0
+            function Point.distance 2
+            push argument 0
+            pop pointer 0
+            push this 0
+            push argument 1
+            call Point.getx 1
+            sub
+            pop local 0
+            push this 1
+            push argument 1
+            call Point.gety 1
+            sub
+            pop local 1
+            push local 0
+            push local 0
+            call Math.multiply 2
+            push local 1
+            push local 1
+            call Math.multiply 2
+            add
+            call Math.sqrt 1
+            return
+            function Point.print 0
+            push argument 0
+            pop pointer 0
+            """;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testFunction() {
+        var input = """
+            class Main {
+                function int soma (int x, int y) {
+                        var int d;
+                        let d = x + y;
+                        return  d;
+                }
+
+                function void main () {
+                        var int d;
+                        let d = Main.soma(4,5);
+                        return;
+                }
+            }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.soma 1
+            push argument 0
+            push argument 1
+            add
+            pop local 0
+            push local 0
+            return
+            function Main.main 1
+            push constant 4
+            push constant 5
+            call Main.soma 2
+            pop local 0
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testInitArray() {
+        var input = """
+            class Main {
+                function void main () {
+                    var Array arr;
+                    let arr = Array.new (5);
+                    return;
+                }
+            }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.main 1
+            push constant 5
+            call Array.new 1
+            pop local 0
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testCalcArray() {
+        var input = """
+            class Main {
+                function void main () {
+                    var Array bar;
+                    var int a;
+                    let bar = Array.new(10);
+                    let bar[1] = bar[1] * 19;
+                    return;
+                }
+            }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.main 2
+            push constant 10
+            call Array.new 1
+            pop local 0
+            push constant 1
+            push local 0
+            add
+            push constant 1
+            push local 0
+            add
+            pop pointer 1
+            push that 0
+            push constant 19
+            call Math.multiply 2
+            pop temp 0
+            pop pointer 1
+            push temp 0
+            pop that 0
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
+
+    @Test
+    public void testCalcArrays() {
+        var input = """
+            class Main {
+                function void main () {
+                    var Array a;
+                    var Array b;
+                    var int i , j, r;
+                    let i = 1;
+                    let j = 2;
+                    let a = Array.new(1, 2);
+                    let b = Array.new(2, 1);
+                    let r = a[b[j]] + b[a[i]];
+                    return;
+                }
+            }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.main 5
+            push constant 1
+            pop local 2
+            push constant 2
+            pop local 3
+            push constant 1
+            push constant 2
+            call Array.new 2
+            pop local 0
+            push constant 2
+            push constant 1
+            call Array.new 2
+            pop local 1
+            push local 3
+            push local 1
+            add
+            pop pointer 1
+            push that 0
+            push local 0
+            add
+            pop pointer 1
+            push that 0
+            push local 2
+            push local 0
+            add
+            pop pointer 1
+            push that 0
+            push local 1
+            add
+            pop pointer 1
+            push that 0
+            add
+            pop local 4
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
+    
+
 }

@@ -758,4 +758,32 @@ public class VMWriterTest extends TestSupport {
         assertEquals(expected, actual);
     }
 
+    @Test
+    public void testCalcArray() {
+        var input = """
+            class Main {
+                function void main () {
+                    var Array bar;
+                    let bar = Array.new (10);
+                    ...
+                    let bar[k] = 19;
+                    let x = bar[k] * 2
+                    return;
+                }
+            }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.main 1
+            push constant 5
+            call Array.new 1
+            pop local 0
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
 }

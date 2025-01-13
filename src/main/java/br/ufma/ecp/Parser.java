@@ -1,27 +1,9 @@
 package br.ufma.ecp;
 
-import static br.ufma.ecp.token.TokenType.AND;
-import static br.ufma.ecp.token.TokenType.ASTERISK;
-import static br.ufma.ecp.token.TokenType.IDENT;
-import static br.ufma.ecp.token.TokenType.STRING;
-import static br.ufma.ecp.token.TokenType.INT;
-import static br.ufma.ecp.token.TokenType.FALSE;
-import static br.ufma.ecp.token.TokenType.GT;
-import static br.ufma.ecp.token.TokenType.THIS;
-import static br.ufma.ecp.token.TokenType.NULL;
-import static br.ufma.ecp.token.TokenType.OR;
-import static br.ufma.ecp.token.TokenType.PLUS;
-import static br.ufma.ecp.token.TokenType.TRUE;
-import static br.ufma.ecp.token.TokenType.LBRACKET;
-import static br.ufma.ecp.token.TokenType.LPAREN;
-import static br.ufma.ecp.token.TokenType.LT;
-import static br.ufma.ecp.token.TokenType.MINUS;
-import static br.ufma.ecp.token.TokenType.NOT;
-import static br.ufma.ecp.token.TokenType.DOT;
-import static br.ufma.ecp.token.TokenType.EQ;
-import static br.ufma.ecp.token.TokenType.RBRACKET;
-import static br.ufma.ecp.token.TokenType.RPAREN;
-import static br.ufma.ecp.token.TokenType.SLASH;
+import static br.ufma.ecp.token.TokenType.*;
+
+import br.ufma.ecp.SymbolTable.Kind;
+import br.ufma.ecp.SymbolTable.Symbol;
 
 import br.ufma.ecp.VMWriter.Command;
 import br.ufma.ecp.VMWriter.Segment;
@@ -42,7 +24,6 @@ public class Parser {
     private VMWriter vmWriter = new VMWriter();
     private int ifLabelNum = 0 ;
     private int whileLabelNum = 0;
-
     private String className; // nome dae uma class
 
     public Parser(byte[] input) {
@@ -63,7 +44,7 @@ public class Parser {
         printNonTerminal("class");
         expectPeek(TokenType.CLASS);
         expectPeek(TokenType.IDENT);
-        className = currentToken.value();
+        className = currentToken.lexeme;
         expectPeek(TokenType.LBRACE);
 
         while (peekTokenIs(TokenType.STATIC) || peekTokenIs(TokenType.FIELD)) {
@@ -84,13 +65,24 @@ public class Parser {
         printNonTerminal("classVarDec");
         expectPeek(TokenType.FIELD, TokenType.STATIC);
 
+        SymbolTable.Kind kind = Kind.STATIC;
+        if (currentTokenIs(FIELD))
+            kind = Kind.FIELD;
+
         // 'int' | 'char' | 'boolean' | className
         expectPeek(TokenType.INT, TokenType.CHAR, TokenType.BOOLEAN, TokenType.IDENT);
+        String type = currentToken.lexeme;
         expectPeek(TokenType.IDENT);
+        String name = currentToken.lexeme;
+
+        symTable.define(name, type, kind);
 
         while (peekTokenIs(TokenType.COMMA)) {
             expectPeek(TokenType.COMMA);
             expectPeek(TokenType.IDENT);
+
+            name = currentToken.lexeme;
+            symTable.define(name, type, kind);
         }
 
         expectPeek(TokenType.SEMICOLON);
@@ -100,15 +92,23 @@ public class Parser {
     public void parseParameterList() {
         printNonTerminal("parameterList");
 
+        SymbolTable.Kind kind = Kind.ARG;
+
         if (!peekTokenIs(TokenType.RPAREN)) // verifica se tem pelo menos uma expressao
         {
             expectPeek(TokenType.INT, TokenType.CHAR, TokenType.BOOLEAN, TokenType.IDENT);
+            String type = currentToken.lexeme;
             expectPeek(TokenType.IDENT);
+            String name = currentToken.lexeme;
+            symTable.define(name, type, kind);
 
             while (peekTokenIs(TokenType.COMMA)) {
                 expectPeek(TokenType.COMMA);
                 expectPeek(TokenType.INT, TokenType.CHAR, TokenType.BOOLEAN, TokenType.IDENT);
+                type = currentToken.lexeme;
                 expectPeek(TokenType.IDENT);
+                name = currentToken.lexeme;
+                symTable.define(name, type, kind);
             }
 
         }
@@ -122,6 +122,9 @@ public class Parser {
         while (peekTokenIs(TokenType.VAR)) {
             parseVarDec();
         }
+        var nlocals = symTable.varCount(Kind.VAR);
+
+        vmWriter.writeFunction(functionName, nlocals);
         parseStatements();
         expectPeek(TokenType.RBRACE);
         printNonTerminal("/subroutineBody");
@@ -131,14 +134,23 @@ public class Parser {
         printNonTerminal("varDec");
         expectPeek(TokenType.VAR);
 
+        SymbolTable.Kind kind = Kind.VAR;
+
         // 'int' | 'char' | 'boolean' | className
         expectPeek(TokenType.INT, TokenType.CHAR, TokenType.BOOLEAN, TokenType.IDENT);
+        String type = currentToken.lexeme;
 
         expectPeek(TokenType.IDENT);
+
+        String name = currentToken.lexeme;
+        symTable.define(name, type, kind);
 
         while (peekTokenIs(TokenType.COMMA)) {
             expectPeek(TokenType.COMMA);
             expectPeek(TokenType.IDENT);
+
+            name = currentToken.lexeme;
+            symTable.define(name, type, kind);
         }
 
         expectPeek(TokenType.SEMICOLON);
@@ -233,15 +245,21 @@ public class Parser {
         ifLabelNum = 0;
         whileLabelNum = 0;
 
+        symTable.startSubroutine();
+
         expectPeek(TokenType.CONSTRUCTOR, TokenType.FUNCTION, TokenType.METHOD);
 
         var subroutineType = currentToken.type;
+
+        if (subroutineType == METHOD) {
+            symTable.define("this", className, Kind.ARG);
+        };
 
         // 'int' | 'char' | 'boolean' | className
         expectPeek(TokenType.VOID, TokenType.INT, TokenType.CHAR, TokenType.BOOLEAN, TokenType.IDENT);
         expectPeek(TokenType.IDENT);
 
-        var functionName = className + "." + currentToken.value();
+        var functionName = className + "." + currentToken.lexeme;
 
         expectPeek(TokenType.LPAREN);
         parseParameterList();

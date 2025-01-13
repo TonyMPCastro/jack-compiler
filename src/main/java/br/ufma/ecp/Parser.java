@@ -1,5 +1,7 @@
 package br.ufma.ecp;
 
+import static br.ufma.ecp.token.TokenType.AND;
+import static br.ufma.ecp.token.TokenType.ASTERISK;
 import static br.ufma.ecp.token.TokenType.CONSTRUCTOR;
 import static br.ufma.ecp.token.TokenType.DO;
 import static br.ufma.ecp.token.TokenType.IDENT;
@@ -11,17 +13,25 @@ import static br.ufma.ecp.token.TokenType.WHILE;
 import static br.ufma.ecp.token.TokenType.STRING;
 import static br.ufma.ecp.token.TokenType.INT;
 import static br.ufma.ecp.token.TokenType.FALSE;
+import static br.ufma.ecp.token.TokenType.GT;
 import static br.ufma.ecp.token.TokenType.THIS;
 import static br.ufma.ecp.token.TokenType.NULL;
+import static br.ufma.ecp.token.TokenType.OR;
+import static br.ufma.ecp.token.TokenType.PLUS;
 import static br.ufma.ecp.token.TokenType.TRUE;
 import static br.ufma.ecp.token.TokenType.LBRACKET;
 import static br.ufma.ecp.token.TokenType.LPAREN;
+import static br.ufma.ecp.token.TokenType.LT;
 import static br.ufma.ecp.token.TokenType.MINUS;
 import static br.ufma.ecp.token.TokenType.NOT;
 import static br.ufma.ecp.token.TokenType.DOT;
+import static br.ufma.ecp.token.TokenType.EQ;
 import static br.ufma.ecp.token.TokenType.RBRACKET;
 import static br.ufma.ecp.token.TokenType.RPAREN;
+import static br.ufma.ecp.token.TokenType.SLASH;
 
+import br.ufma.ecp.VMWriter.Command;
+import br.ufma.ecp.VMWriter.Segment;
 import br.ufma.ecp.token.Token;
 import br.ufma.ecp.token.TokenType;
 
@@ -157,12 +167,21 @@ public class Parser {
         switch (peekToken.type) {
             case INT:
                 expectPeek(INT);
+                vmWriter.writePush(Segment.CONST, Integer.parseInt(currentToken.lexeme));
                 break;
             case NUMBER:
                 expectPeek(TokenType.NUMBER);
+                vmWriter.writePush(Segment.CONST, Integer.parseInt(currentToken.lexeme));
                 break;
             case STRING:
                 expectPeek(STRING);
+                var strValue = currentToken.lexeme;
+                vmWriter.writePush(Segment.CONST, strValue.length());
+                vmWriter.writeCall("String.new", 1);
+                for (int i = 0; i < strValue.length(); i++) {
+                    vmWriter.writePush(Segment.CONST, strValue.charAt(i));
+                    vmWriter.writeCall("String.appendChar", 2);
+                }
                 break;
             case FALSE:
             case NULL:
@@ -228,8 +247,10 @@ public class Parser {
         printNonTerminal("expression");
         parseTerm();
         while (isOperator(peekToken.lexeme)) {
+            var ope = peekToken.type;
             expectPeek(peekToken.type);
             parseTerm();
+            compileOperators(ope);
         }
         printNonTerminal("/expression");
     }
@@ -385,6 +406,35 @@ public class Parser {
         parseSubroutineCall();
         expectPeek(TokenType.SEMICOLON);
         printNonTerminal("/doStatement");
+    }
+
+    public void compileOperators(TokenType type) {
+
+        if (type == ASTERISK) {
+            vmWriter.writeCall("Math.multiply", 2);
+        } else if (type == SLASH) {
+            vmWriter.writeCall("Math.divide", 2);
+        } else {
+            vmWriter.writeArithmetic(typeOperator(type));
+        }
+    }
+
+    private Command typeOperator(TokenType type) {
+        if (type == PLUS)
+            return Command.ADD;
+        if (type == MINUS)
+            return Command.SUB;
+        if (type == LT)
+            return Command.LT;
+        if (type == GT)
+            return Command.GT;
+        if (type == EQ)
+            return Command.EQ;
+        if (type == AND)
+            return Command.AND;
+        if (type == OR)
+            return Command.OR;
+        return null;
     }
 
     // funções auxiliares

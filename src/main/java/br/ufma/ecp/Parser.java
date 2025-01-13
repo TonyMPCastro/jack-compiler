@@ -34,6 +34,7 @@ public class Parser {
     private Token currentToken;
     private Token peekToken;
     private StringBuilder xmlOutput = new StringBuilder();
+    private VMWriter vmWriter = new VMWriter();
 
     private String className; // nome dae uma class
 
@@ -389,6 +390,10 @@ public class Parser {
     // funções auxiliares
     public String XMLOutput() {
         return xmlOutput.toString();
+    }
+
+    public String VMOutput() {
+        return vmWriter.vmOutput();
     }
 
     private void printNonTerminal(String nterminal) {

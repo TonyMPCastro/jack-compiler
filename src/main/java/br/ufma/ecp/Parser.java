@@ -278,8 +278,7 @@ public class Parser {
         if (subroutineType == METHOD) {
             symTable.define("this", className, Kind.ARG);
         }
-        ;
-
+        
         // 'int' | 'char' | 'boolean' | className
         expectPeek(TokenType.VOID, TokenType.INT, TokenType.CHAR, TokenType.BOOLEAN, TokenType.IDENT);
         expectPeek(TokenType.IDENT);
@@ -520,6 +519,9 @@ public class Parser {
         expectPeek(TokenType.IDENT);
         parseSubroutineCall();
         expectPeek(TokenType.SEMICOLON);
+
+        vmWriter.writePop(Segment.TEMP, 0);
+
         printNonTerminal("/doStatement");
     }
 

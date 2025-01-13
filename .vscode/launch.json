@@ -19,7 +19,7 @@
             "request": "launch",
             "mainClass": "br.ufma.ecp.App",
             "projectName": "jackcompiler",
-            "args": "C:\\Users\\anton\\Downloads\\jackmemory-game-master"
+            "args": "C:\\Users\\anton\\Downloads\\nand2tetris-notes-main\\projects\\11\\Pong"
 
         }
     ]

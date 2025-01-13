@@ -2,14 +2,7 @@ package br.ufma.ecp;
 
 import static br.ufma.ecp.token.TokenType.AND;
 import static br.ufma.ecp.token.TokenType.ASTERISK;
-import static br.ufma.ecp.token.TokenType.CONSTRUCTOR;
-import static br.ufma.ecp.token.TokenType.DO;
 import static br.ufma.ecp.token.TokenType.IDENT;
-import static br.ufma.ecp.token.TokenType.IF;
-import static br.ufma.ecp.token.TokenType.LET;
-import static br.ufma.ecp.token.TokenType.METHOD;
-import static br.ufma.ecp.token.TokenType.RETURN;
-import static br.ufma.ecp.token.TokenType.WHILE;
 import static br.ufma.ecp.token.TokenType.STRING;
 import static br.ufma.ecp.token.TokenType.INT;
 import static br.ufma.ecp.token.TokenType.FALSE;
@@ -32,6 +25,7 @@ import static br.ufma.ecp.token.TokenType.SLASH;
 
 import br.ufma.ecp.VMWriter.Command;
 import br.ufma.ecp.VMWriter.Segment;
+
 import br.ufma.ecp.token.Token;
 import br.ufma.ecp.token.TokenType;
 
@@ -44,6 +38,7 @@ public class Parser {
     private Token currentToken;
     private Token peekToken;
     private StringBuilder xmlOutput = new StringBuilder();
+    private SymbolTable symTable = new SymbolTable();
     private VMWriter vmWriter = new VMWriter();
     private int ifLabelNum = 0 ;
     private int whileLabelNum = 0;
@@ -272,8 +267,6 @@ public class Parser {
     // letStatement -> 'let' identifier( '[' expression ']' )? '=' expression ';'
     public void parseLet() {
 
-        var isArray = false;
-
         printNonTerminal("letStatement");
         expectPeek(TokenType.LET);
         expectPeek(TokenType.IDENT);
@@ -282,7 +275,6 @@ public class Parser {
             expectPeek(TokenType.LBRACKET);
             parseExpression();
             expectPeek(TokenType.RBRACKET);
-            isArray = true;
         }
 
         expectPeek(TokenType.EQ);

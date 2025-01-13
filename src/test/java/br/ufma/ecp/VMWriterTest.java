@@ -766,8 +766,7 @@ public class VMWriterTest extends TestSupport {
                     var Array bar;
                     var int a;
                     let bar = Array.new(10);
-                    let a = bar[0];
-                    let bar[0] = a * 19;
+                    let bar[1] = bar[1] * 19;
                     return;
                 }
             }
@@ -780,16 +779,14 @@ public class VMWriterTest extends TestSupport {
             push constant 10
             call Array.new 1
             pop local 0
-            push constant 0
+            push constant 1
+            push local 0
+            add
+            push constant 1
             push local 0
             add
             pop pointer 1
             push that 0
-            pop local 1
-            push constant 0
-            push local 0
-            add
-            push local 1
             push constant 19
             call Math.multiply 2
             pop temp 0
@@ -801,5 +798,68 @@ public class VMWriterTest extends TestSupport {
             """;
         assertEquals(expected, actual);
     }
+
+
+    @Test
+    public void testCalcArrays() {
+        var input = """
+            class Main {
+                function void main () {
+                    var Array a;
+                    var Array b;
+                    var int i , j, r;
+                    let i = 1;
+                    let j = 2;
+                    let a = Array.new(1, 2);
+                    let b = Array.new(2, 1);
+                    let r = a[b[j]] + b[a[i]];
+                    return;
+                }
+            }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.main 5
+            push constant 1
+            pop local 2
+            push constant 2
+            pop local 3
+            push constant 1
+            push constant 2
+            call Array.new 2
+            pop local 0
+            push constant 2
+            push constant 1
+            call Array.new 2
+            pop local 1
+            push local 3
+            push local 1
+            add
+            pop pointer 1
+            push that 0
+            push local 0
+            add
+            pop pointer 1
+            push that 0
+            push local 2
+            push local 0
+            add
+            pop pointer 1
+            push that 0
+            push local 1
+            add
+            pop pointer 1
+            push that 0
+            add
+            pop local 4
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
+    
 
 }

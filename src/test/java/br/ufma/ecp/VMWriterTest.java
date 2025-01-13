@@ -694,4 +694,43 @@ public class VMWriterTest extends TestSupport {
         assertEquals(expected, actual);
     }
 
+    @Test
+    public void testFunction() {
+        var input = """
+            class Main {
+                function int soma (int x, int y) {
+                        var int d;
+                        let d = x + y;
+                        return  d;
+                }
+
+                function void main () {
+                        var int d;
+                        let d = Main.soma(4,5);
+                        return;
+                }
+            }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.soma 1
+            push argument 0
+            push argument 1
+            add
+            pop local 0
+            push local 0
+            return
+            function Main.main 1
+            push constant 4
+            push constant 5
+            call Main.soma 2
+            pop local 0
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
 }

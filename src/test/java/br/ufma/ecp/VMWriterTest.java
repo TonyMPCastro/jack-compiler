@@ -594,4 +594,104 @@ public class VMWriterTest extends TestSupport {
         assertEquals(expected, actual);
     }
 
+    @Test
+    public void testMethodSimples() {
+        var input = """
+            class Main {
+                function void main () {
+                    var Point p1, p2;
+                    var int d;
+                    let d = p1.distance(p2);
+                    return;
+                }
+            }      
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Main.main 3
+            push local 0
+            push local 1
+            call Point.distance 2
+            pop local 2
+            push constant 0
+            return
+            """;
+        assertEquals(expected, actual);
+    }
+
+
+    @Test
+    public void testMethod() {
+        var input = """
+            class Point {
+            field int x, y;
+            static int pointCount;
+
+            constructor Point new(int ax, int ay) {}
+
+            method int getx() {}
+            method int gety() {}
+            method int getPointCount() {}
+
+            method Point plus(Point other) {}
+            method int distance(Point other) {
+                var int dx, dy;
+                let dx = x - other.getx();
+                let dy = y - other.gety();
+                return Math.sqrt((dx*dx) + (dy*dy));
+            }
+            method void print() {}
+        }
+         """;;
+        var parser = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        parser.parse();
+        String actual = parser.VMOutput();
+        String expected = """
+            function Point.new 0
+            push constant 2
+            call Memory.alloc 1
+            pop pointer 0
+            function Point.getx 0
+            push argument 0
+            pop pointer 0
+            function Point.gety 0
+            push argument 0
+            pop pointer 0
+            function Point.getPointCount 0
+            push argument 0
+            pop pointer 0
+            function Point.plus 0
+            push argument 0
+            pop pointer 0
+            function Point.distance 2
+            push argument 0
+            pop pointer 0
+            push this 0
+            push argument 1
+            call Point.getx 1
+            sub
+            pop local 0
+            push this 1
+            push argument 1
+            call Point.gety 1
+            sub
+            pop local 1
+            push local 0
+            push local 0
+            call Math.multiply 2
+            push local 1
+            push local 1
+            call Math.multiply 2
+            add
+            call Math.sqrt 1
+            return
+            function Point.print 0
+            push argument 0
+            pop pointer 0
+            """;
+        assertEquals(expected, actual);
+    }
+
 }

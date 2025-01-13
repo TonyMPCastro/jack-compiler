@@ -764,10 +764,10 @@ public class VMWriterTest extends TestSupport {
             class Main {
                 function void main () {
                     var Array bar;
-                    let bar = Array.new (10);
-                    ...
-                    let bar[k] = 19;
-                    let x = bar[k] * 2
+                    var int a;
+                    let bar = Array.new(10);
+                    let a = bar[0];
+                    let bar[0] = a * 19;
                     return;
                 }
             }
@@ -776,10 +776,26 @@ public class VMWriterTest extends TestSupport {
         parser.parse();
         String actual = parser.VMOutput();
         String expected = """
-            function Main.main 1
-            push constant 5
+            function Main.main 2
+            push constant 10
             call Array.new 1
             pop local 0
+            push constant 0
+            push local 0
+            add
+            pop pointer 1
+            push that 0
+            pop local 1
+            push constant 0
+            push local 0
+            add
+            push local 1
+            push constant 19
+            call Math.multiply 2
+            pop temp 0
+            pop pointer 1
+            push temp 0
+            pop that 0
             push constant 0
             return
             """;
